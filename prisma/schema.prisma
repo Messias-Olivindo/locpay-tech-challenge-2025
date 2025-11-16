@@ -10,3 +10,31 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
+// Enum
+
+enum Status {
+  pending
+  confirmed
+}
+
+// Models
+
+model Receiver {
+  id String @id @default(uuid()) 
+  name String
+  balance Decimal @default(0)
+
+  operations Operation[]
+}
+
+model Operation {
+  id String @id @default(uuid())  
+  receiver Receiver @relation(fields: [receiverId],  references: [id])
+  receiverId String @map("receiver_id")
+  grossValue  Decimal @map("gross_value")
+  fee Decimal 
+  netValue Decimal @map("net_value") 
+  status  Status   @default(pending)
+}
+
