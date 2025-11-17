@@ -14,7 +14,7 @@ export class ReceiversService {
    * @returns {Promise<ReceiverEntity>} - Recebedor criado
    */
   async create({name}:createReceiverDTO): Promise<ReceiverEntity>{
-    const receiver = this.prismaService.receiver.create({data: {
+    const receiver = await this.prismaService.receiver.create({data: {
       name
     }});
     return receiver;
