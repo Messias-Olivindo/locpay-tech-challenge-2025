@@ -31,6 +31,14 @@ cp .env.example .env
 npx prisma migrate dev --name init
 ```
 
+5. Rode o servidor:
+
+```bash
+npm run start:dev
+```
+
+6. Teste a API localmente no seguinte endereço: `http://localhost:3000`  
+
 ## Exemplos de requests e responses 📤
 
 ### `POST /receivers`
@@ -51,7 +59,8 @@ npx prisma migrate dev --name init
     {
         "id": "0cfea37a-5955-4c5b-98ab-d59c24bb870a",
         "name": "Messias",
-        "balance": "0"
+        "balance": "0",
+        "operations": []
     }
     ```
 
@@ -128,7 +137,18 @@ npx prisma migrate dev --name init
         {
             "id":"0cfea37a-5955-4c5b-98ab-d59c24bb870a",
             "name":"Messias",
-            "balance":"8730"}
+            "balance":"8730",
+            "operations": [
+                {
+                    "id":"652939f2-0982-4c18-be2e-38becc6cfb62",
+                    "receiverId":"0cfea37a-5955-4c5b-98ab-d59c24bb870a",
+                    "grossValue":"9000",
+                    "fee":"270",
+                    "netValue":"8730",
+                    "status":"confirmed",
+                }
+            ]
+            }
         }
     ```
 
