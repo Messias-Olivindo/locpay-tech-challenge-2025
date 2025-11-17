@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -37,8 +36,9 @@ export class ReceiversController {
    *
    * @param {string} receiverId - Id (uuid) do recebedor a ser buscado
    * @returns {Promise<ReceiverEntity>} - Recebedor encontrado
-   * @throws {BadRequestException} - Caso o id não seja um UUID válido
-   * @throws {NotFoundException} - Caso nenhun recebedor seja encontrado
+   * @throws {NotFoundException} - Se nada for encontrado com o id
+   * @throws {InternalServerErrorException} - Caso o erro não seja identificado
+   * @throws {BadRequestException} - Se a validação do Id como UUID falhar
    */
   @Get(':id')
   getById(

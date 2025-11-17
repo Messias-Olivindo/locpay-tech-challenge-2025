@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { createReceiverDTO } from './dto/createReceiver.dto';
 import { ReceiverEntity } from './entity/receiver.entity';
+import { Prisma } from 'generated/prisma/client';
 
 @Injectable()
 export class ReceiversService {
@@ -29,12 +34,23 @@ export class ReceiversService {
    * @param {string} receiverId - Id (uuid) do recebedor
    * @returns {Promise<ReceiverEntity>} - Recebedor encontrado
    * @throws {NotFoundException} - Se nada for encontrado com o id
+   * @throws {InternalServerErrorException} - Caso o erro não seja identificado
    */
   async getById(receiverId: string): Promise<ReceiverEntity> {
-    const receiver = await this.prismaService.receiver.findUniqueOrThrow({
-      where: { id: receiverId },
-      include: { operations: true },
-    });
-    return receiver;
+    try {
+      const receiver = await this.prismaService.receiver.findUniqueOrThrow({
+        where: { id: receiverId },
+        include: { operations: true },
+      });
+      return receiver;
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        throw new NotFoundException();
+      }
+      throw new InternalServerErrorException();
+    }
   }
 }
