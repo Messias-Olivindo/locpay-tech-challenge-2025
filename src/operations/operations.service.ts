@@ -1,10 +1,11 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { createOperationDto } from './dto/createOperation.dto';
+import { CreateOperationDTO } from './dto/createOperation.dto';
 import { OperationEntity } from './entity/operation.entity';
 import { Prisma } from 'generated/prisma/client';
 
@@ -16,13 +17,13 @@ export class OperationsService {
    * Cria uma nova operação
    * Calcula a taxa (3%) e o valor líquido
    *
-   * @param {createOperationDto} - Dados do id do recebedor (receiverId) e valor bruto (grossValue)
+   * @param {CreateOperationDTO} - Dados do id do recebedor (receiverId) e valor bruto (grossValue)
    * @returns {Promise<OperationEntity>} - Entidade da operação criada
    */
   async create({
     receiverId,
     grossValue,
-  }: createOperationDto): Promise<OperationEntity> {
+  }: CreateOperationDTO): Promise<OperationEntity> {
     const decimalGrossValue = new Prisma.Decimal(grossValue);
 
     // Calcula o valor da taxa de antecipação
@@ -54,13 +55,23 @@ export class OperationsService {
    * @param {string} operationId - Id (uuid) da operação
    * @returns {Promise<OperationEntity>} - Operação encontrada
    * @throws {NotFoundException} - Se nada for encontrado com o id
+   * @throws {InternalServerErrorException} - Se o erro não for identificado
    */
-  async get(operationId: string): Promise<OperationEntity> {
-    const operation = await this.prismaService.operation.findUniqueOrThrow({
-      where: { id: operationId },
-    });
-
-    return operation;
+  async getById(operationId: string): Promise<OperationEntity> {
+    try {
+      const operation = await this.prismaService.operation.findUniqueOrThrow({
+        where: { id: operationId },
+      });
+      return operation;
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        throw new NotFoundException();
+      }
+      throw new InternalServerErrorException();
+    }
   }
 
   /**
@@ -71,6 +82,7 @@ export class OperationsService {
    *
    * @param {string} operationId - Id (uuid) da operação a ser confirmada
    * @returns {Promise<OperationEntity>} - Retorna a operação incluindo os dados do recebedor
+   * @throws {BadRequestException} - Caso não seja encontrado uma operação com o id e status pendente correspondente
    * @throws {InternalServerErrorException} - Caso ocorra algum erro
    */
   async confirm(operationId: string): Promise<OperationEntity> {
@@ -78,10 +90,9 @@ export class OperationsService {
       // Realiza as operações de atualizar o status da operação e o saldo do recebedor em uma transação
       await this.prismaService.$transaction(async (tx) => {
         const operation = await tx.operation.update({
-          where: { id: operationId },
+          where: { id: operationId, status: 'pending' },
           data: { status: 'confirmed' },
         });
-
         await tx.receiver.update({
           where: { id: operation.receiverId },
           data: { balance: { increment: operation.netValue } },
@@ -96,7 +107,12 @@ export class OperationsService {
         });
       return updatedOperation;
     } catch (err) {
-      // Erro desconhecido
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        throw new BadRequestException();
+      }
       throw new InternalServerErrorException();
     }
   }

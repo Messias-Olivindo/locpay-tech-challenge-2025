@@ -1,6 +1,6 @@
-import { IsDecimal, isDecimal, IsNotEmpty, isNotEmpty, IsUUID } from "class-validator";
+import { IsDecimal, IsNotEmpty, IsUUID } from "class-validator";
 
-export class createOperationDto {
+export class CreateOperationDTO {
     @IsUUID()
     @IsNotEmpty()
     receiverId: string;
